@@ -6,7 +6,7 @@
     <title>文件上传</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, sans-serif;
             background-color: #f5f7fa;
             display: flex;
             justify-content: center;
@@ -16,59 +16,34 @@
         }
         .upload-card {
             background: white;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            width: 400px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            width: 360px;
             text-align: center;
         }
-        h2 { color: #333; margin-bottom: 24px; }
+        h2 { color: #333; margin-top: 0; }
         .file-box {
             border: 2px dashed #e0e6ed;
-            padding: 30px 20px;
-            border-radius: 12px;
+            padding: 25px 10px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: all 0.3s;
             background: #fafbfc;
-        }
-        .file-box:hover {
-            border-color: #409eff;
-            background: #f2f8ff;
         }
         input[type="file"] { display: none; }
         .upload-btn {
-            margin-top: 20px;
+            margin-top: 15px;
             background: #409eff;
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            width: 100%;
-            transition: background 0.3s;
-        }
-        .upload-btn:hover { background: #66b1ff; }
-        .upload-btn:disabled { background: #a0cfff; cursor: not-allowed; }
-        #status { margin-top: 20px; font-size: 14px; color: #666; word-break: break-all; }
-        .result-url {
-            margin-top: 15px;
             padding: 10px;
-            background: #f0f9eb;
-            border: 1px solid #e1f3d8;
-            color: #67c23a;
             border-radius: 6px;
-            display: none;
-        }
-        .copy-btn {
-            margin-top: 5px;
-            background: none;
-            border: none;
-            color: #409eff;
             cursor: pointer;
-            text-decoration: underline;
-            font-size: 12px;
+            width: 100%;
+            font-size: 16px;
         }
+        .upload-btn:disabled { background: #a0cfff; }
+        #status { margin-top: 15px; font-size: 14px; color: #666; word-break: break-all; }
     </style>
 </head>
 <body>
@@ -77,41 +52,33 @@
     <h2>文件上传</h2>
 
     <div class="file-box" onclick="document.getElementById('fileInput').click()">
-        <span id="fileHint">点击选择或拖拽文件到这里</span>
+        <span id="fileHint">点击选择文件</span>
         <input type="file" id="fileInput" onchange="updateFileInfo()">
     </div>
 
-    <button class="upload-btn" id="uploadBtn" onclick="performUpload()">开始上传</button>
+    <button class="upload-btn" id="uploadBtn" onclick="performUpload()">上传</button>
 
     <div id="status"></div>
-    <div id="resultBox" class="result-url">
-        <strong>直连链接：</strong><br>
-        <span id="urlText"></span><br>
-        <button class="copy-btn" onclick="copyUrl()">[复制链接]</button>
-    </div>
 </div>
 
 <script>
-    // 选择文件后更新界面文字提示
+    // 选择文件后更新文字
     function updateFileInfo() {
         const fileInput = document.getElementById('fileInput');
         const fileHint = document.getElementById('fileHint');
         if (fileInput.files.length > 0) {
             fileHint.innerText = "已选择: " + fileInput.files[0].name;
-            fileHint.style.color = "#409eff";
         }
     }
 
-    // 核心：异步上传逻辑
+    // 异步上传
     async function performUpload() {
         const fileInput = document.getElementById('fileInput');
         const status = document.getElementById('status');
-        const resultBox = document.getElementById('resultBox');
-        const urlText = document.getElementById('urlText');
         const uploadBtn = document.getElementById('uploadBtn');
 
         if (fileInput.files.length === 0) {
-            status.innerText = "❌ 请先选择一个文件！";
+            status.innerText = "❌ 请先选择文件";
             status.style.color = "#f56c6c";
             return;
         }
@@ -119,13 +86,11 @@
         const formData = new FormData();
         formData.append("file", fileInput.files[0]);
 
-        status.innerText = "⏳ 正在上传中，请稍候...";
+        status.innerText = "⏳ 正在上传...";
         status.style.color = "#666";
         uploadBtn.disabled = true;
-        resultBox.style.display = "none";
 
         try {
-            // 请求后端刚刚写好的接口
             const response = await fetch('/upload', {
                 method: 'POST',
                 body: formData
@@ -134,30 +99,20 @@
             const data = await response.json();
 
             if (response.ok) {
-                status.innerText = "🎉 上传成功！";
-                status.style.color = "#67c23a";
-                urlText.innerText = data.url;
-                resultBox.style.display = "block"; // 显示直连链接
+                // 成功：直接把文字替换为可点击的直连 A 标签
+                status.innerHTML = `🎉 上传成功！直连地址：<br><a href="${data.url}" target="_blank" style="color: #409eff; text-decoration: underline;">${data.url}</a>`;
             } else {
-                status.innerText = "❌ 上传失败: " + (data.error || "未知错误");
+                // 后端返回的业务异常（如文件过大、非法字符等）
+                status.innerText = "❌ 上传失败: " + (data.error || "服务器开小差了");
                 status.style.color = "#f56c6c";
             }
         } catch (error) {
+            // 网络层面的异常（如服务器没开、断网等）
             status.innerText = "❌ 网络错误，无法连接到服务器";
             status.style.color = "#f56c6c";
         } finally {
             uploadBtn.disabled = false;
         }
-    }
-
-    // 一键复制功能
-    function copyUrl() {
-        const urlText = document.getElementById('urlText').innerText;
-        navigator.clipboard.writeText(urlText).then(() => {
-            alert("链接已复制到剪贴板！");
-        }).catch(err => {
-            alert("复制失败，请手动复制");
-        });
     }
 </script>
 
