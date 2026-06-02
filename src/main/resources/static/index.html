@@ -99,8 +99,11 @@
             const data = await response.json();
 
             if (response.ok) {
-                // 成功：直接把文字替换为可点击的直连 A 标签
-                status.innerHTML = `🎉 上传成功！直连地址：<br><a href="${data.url}" target="_blank" style="color: #409eff; text-decoration: underline;">${data.url}</a>`;
+                // 方案一的核心：使用 window.location.origin 动态获取当前浏览器的 协议+域名+端口
+                const fullUrl = window.location.origin + data.url;
+
+                // 成功：把文字替换为可点击的完整直连 A 标签
+                status.innerHTML = `🎉 上传成功！直连地址：<br><a href="${fullUrl}" target="_blank" style="color: #409eff; text-decoration: underline;">${fullUrl}</a>`;
             } else {
                 // 后端返回的业务异常（如文件过大、非法字符等）
                 status.innerText = "❌ 上传失败: " + (data.error || "服务器开小差了");

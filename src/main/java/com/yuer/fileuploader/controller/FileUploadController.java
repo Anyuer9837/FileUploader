@@ -66,14 +66,11 @@ public class FileUploadController {
             Path targetLocation = this.fileStorageLocation.resolve(fileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
-            // 5. 动态生成用户直连的 URL
-            String fileDownloadUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .path("/files/")
-                    .path(fileName)
-                    .toUriString();
+            // 5. 不再生成绝对 URL，只生成相对路径
+            String fileRelativePath = "/files/" + fileName;
 
             response.put("message", "上传成功");
-            response.put("url", fileDownloadUrl);
+            response.put("url", fileRelativePath); // 返回给前端：/files/abc_123.jpg
             return ResponseEntity.ok(response);
 
         } catch (IOException ex) {
