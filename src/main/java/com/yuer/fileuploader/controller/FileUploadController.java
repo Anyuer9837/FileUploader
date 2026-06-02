@@ -41,11 +41,23 @@ public class FileUploadController {
             return ResponseEntity.badRequest().body(response);
         }
 
+        // 1. 获取原始文件名并清理路径（主要为了安全获取后缀）
         String originalFilename = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
-        // 使用 UUID 拼接文件名，防止同名文件覆盖
-        String fileName = UUID.randomUUID() + "_" + originalFilename;
+
+        // 2. 提取文件后缀名 (例如: .jpg, .png, .pdf)
+        String fileExtension = "";
+        int lastIndexOf = originalFilename.lastIndexOf(".");
+        if (lastIndexOf != -1) {
+            fileExtension = originalFilename.substring(lastIndexOf);
+        }
+
+        // 3. 生成新文件名：UUID + 时间戳 + 后缀名
+        String uuid = UUID.randomUUID().toString().replace("-", ""); // 去掉UUID的横杠，让文件名更整洁
+        long timestamp = System.currentTimeMillis();
+        String fileName = uuid + "-" + timestamp + fileExtension;
 
         try {
+            // 4. 检查路径非法序列（虽然新生成的文件名理论上很安全，但保留作为兜底）
             if (fileName.contains("..")) {
                 response.put("error", "文件名包含非法路径序列");
                 return ResponseEntity.badRequest().body(response);
@@ -54,7 +66,7 @@ public class FileUploadController {
             Path targetLocation = this.fileStorageLocation.resolve(fileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
-            // 动态生成用户直连的 URL
+            // 5. 动态生成用户直连的 URL
             String fileDownloadUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
                     .path("/files/")
                     .path(fileName)
